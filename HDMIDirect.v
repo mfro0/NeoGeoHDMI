@@ -3,9 +3,9 @@
 //   Originally based on fpga4fun.com HDMI/DVI sample code (c) fpga4fun.com & KNJN LLC 2013
 //   Added Neo Geo MVS input, scan doubling, HDMI data packets and audio
 //   Offers fake scanline generation (select via button)
-//		0: Line doubled but even lines are half brightness
-//		1: Only show even lines (odd lines are black)
-//		2: Line doubled
+//              0: Line doubled but even lines are half brightness
+//              1: Only show even lines (odd lines are black)
+//              2: Line doubled
 
 module HDMIDirectV(
     input pixclk,
@@ -38,45 +38,45 @@ module HDMIDirectV(
 ////////////////////////////////////////////////////////////////////////
 // User configuration defines
 
-`define OLD_SYNC	// Comment out if have NeoGeo that clears at end of line
-`define YM3016		// Comment out for BU9480F (chip found on newer boards)
+`define OLD_SYNC        // Comment out if have NeoGeo that clears at end of line
+`define YM3016          // Comment out for BU9480F (chip found on newer boards)
 `define SPLASH_SCREEN
 `define BAD_SYNC_DETECT
-`define DELAY_UNTIL_SPLASH_SCREEN	240	// In frames (/60 for seconds)
+`define DELAY_UNTIL_SPLASH_SCREEN       240     // In frames (/60 for seconds)
 
 ////////////////////////////////////////////////////////////////////////
 
 // Defines to do with video signal generation
-`define DISPLAY_WIDTH			720
-`define DISPLAY_HEIGHT			480
-`define FULL_WIDTH				858
-`define FULL_HEIGHT				525
-`define H_FRONT_PORCH			16
-`define H_SYNC						62 
-`define V_FRONT_PORCH			9
-`define V_SYNC 					6
+`define DISPLAY_WIDTH                   720
+`define DISPLAY_HEIGHT                  480
+`define FULL_WIDTH                              858
+`define FULL_HEIGHT                             525
+`define H_FRONT_PORCH                   16
+`define H_SYNC                                          62
+`define V_FRONT_PORCH                   9
+`define V_SYNC                                  6
 
-`define NEOGEO_DISPLAY_WIDTH	640
-`define NEOGEO_DISPLAY_HEIGHT	448
-`define NEOGEO_FULL_WIDTH		768
-`define NEOGEO_FULL_HEIGHT		528
+`define NEOGEO_DISPLAY_WIDTH    640
+`define NEOGEO_DISPLAY_HEIGHT   448
+`define NEOGEO_FULL_WIDTH               768
+`define NEOGEO_FULL_HEIGHT              528
 `ifdef OLD_SYNC
-    `define NEOGEO_VSYNC_LENGTH	81
+    `define NEOGEO_VSYNC_LENGTH 81
 `else
-    `define NEOGEO_VSYNC_LENGTH	80
+    `define NEOGEO_VSYNC_LENGTH 80
 `endif
 
-`define CENTERING_X				((`DISPLAY_WIDTH-`NEOGEO_DISPLAY_WIDTH)/2)	// For centering NeoGeo's 4:3 screen
-`define CENTERING_Y				((`DISPLAY_HEIGHT-`NEOGEO_DISPLAY_HEIGHT)/2)	// Should be multiple of 8
+`define CENTERING_X                             ((`DISPLAY_WIDTH-`NEOGEO_DISPLAY_WIDTH)/2)      // For centering NeoGeo's 4:3 screen
+`define CENTERING_Y                             ((`DISPLAY_HEIGHT-`NEOGEO_DISPLAY_HEIGHT)/2)    // Should be multiple of 8
 
 // Defines to do with data packet sending
-`define DATA_START		(`DISPLAY_WIDTH+4) // Need 4 cycles of control data first
-`define DATA_PREAMBLE	8
-`define DATA_GUARDBAND	2
-`define DATA_SIZE			32
-`define VIDEO_PREAMBLE	8
-`define VIDEO_GUARDBAND	2
-`define CTL_END			(`FULL_WIDTH-`VIDEO_PREAMBLE-`VIDEO_GUARDBAND)
+`define DATA_START              (`DISPLAY_WIDTH+4) // Need 4 cycles of control data first
+`define DATA_PREAMBLE   8
+`define DATA_GUARDBAND  2
+`define DATA_SIZE                       32
+`define VIDEO_PREAMBLE  8
+`define VIDEO_GUARDBAND 2
+`define CTL_END                 (`FULL_WIDTH-`VIDEO_PREAMBLE-`VIDEO_GUARDBAND)
 
 wire clk_TMDS = pixclk72;
 
@@ -271,7 +271,7 @@ begin
         end else begin
             redneo <= 0;
             greenneo <= 0;
-            blueneo <= 0;			
+            blueneo <= 0;
         end
     end
 end
@@ -296,7 +296,7 @@ reg [8:0] num [7:0];
 reg [8:0] den [7:0];
 reg [8:0] res [7:0];
 reg [9:0] s;
-reg [19:0] cc; 
+reg [19:0] cc;
 reg [1:0] lastScanlineType;
 reg [7:0] scanlineChanged;
 reg shadow;
@@ -331,7 +331,7 @@ begin
     `ifdef SPLASH_SCREEN
         if (logo!=127) begin
             // Splash screen rendering
-            dx<=(CounterX+9-`DISPLAY_WIDTH/2);	// divide is latent so look ahead
+            dx<=(CounterX+9-`DISPLAY_WIDTH/2);  // divide is latent so look ahead
             dx2<=(CounterX-`DISPLAY_WIDTH/2);
             dy<=(CounterY-`DISPLAY_HEIGHT/2);
             // Calulate distance from centre
@@ -378,12 +378,12 @@ begin
             if ($signed(d)>=256) begin
                 red <= redneo;
                 green <= greenneo;
-                blue <= blueneo;	
+                blue <= blueneo;
             end else begin
                 if (CounterX>3 && $signed(d)>=0 && (d<128 || d>=224 || !fontData[(d>>2)&7])) begin
                     red<=(ba+d<255)?ba+d:255;
                     green<=(d*d)>>8;
-                    blue<=0;		
+                    blue<=0;
                 end else begin
                     red<=0;
                     green<=0;
@@ -476,8 +476,8 @@ end
 ////////////////////////////////////////////////////////////////////////
 
 // Timing for 32KHz audio at 27MHz
-`define AUDIO_TIMER_ADDITION	4
-`define AUDIO_TIMER_LIMIT		3375
+`define AUDIO_TIMER_ADDITION    4
+`define AUDIO_TIMER_LIMIT               3375
 
 localparam [191:0] channelStatus = 192'hc203004004; // 32KHz 16-bit LPCM audio
 reg [23:0] audioPacketHeader;
@@ -514,8 +514,8 @@ task AudioPacketGeneration;
                 audioTimer<=audioTimer-`AUDIO_TIMER_LIMIT+`AUDIO_TIMER_ADDITION;
                 audioPacketHeader<=audioPacketHeader|24'h000002|((channelStatusIdx==0?24'h100100:24'h000100)<<samplesHead);
                 audioSubPacket[samplesHead]<=((curSampleL<<8)|(curSampleR<<32)
-                |((^curSampleL)?56'h08000000000000:56'h0)		// parity bit for left channel
-                |((^curSampleR)?56'h80000000000000:56'h0))	// parity bit for right channel
+                |((^curSampleL)?56'h08000000000000:56'h0)               // parity bit for left channel
+                |((^curSampleR)?56'h80000000000000:56'h0))      // parity bit for right channel
                 ^(channelStatus[channelStatusIdx]?56'hCC000000000000:56'h0); // And channel status bit and adjust parity
                 if (channelStatusIdx<191)
                     channelStatusIdx<=channelStatusIdx+1;
@@ -540,7 +540,7 @@ endtask
 // Generates error correction codes needed for verifying HDMI packets
 ////////////////////////////////////////////////////////////////////////
 
-function [7:0] ECCcode;	// Cycles the error code generator
+function [7:0] ECCcode; // Cycles the error code generator
     input [7:0] code;
     input bita;
     input passthroughData;
@@ -662,8 +662,8 @@ begin
             preamble<=0;
             // Set up the first of the packets we'll send
             if (sendRegenPacket) begin
-                packetHeader<=24'h000001;	// audio clock regeneration packet
-                subpacket[0]<=56'h00100078690000;	// N=0x1000 CTS=0x6978 (27MHz pixel clock -> 32KHz audio clock)
+                packetHeader<=24'h000001;       // audio clock regeneration packet
+                subpacket[0]<=56'h00100078690000;       // N=0x1000 CTS=0x6978 (27MHz pixel clock -> 32KHz audio clock)
                 subpacket[1]<=56'h00100078690000;
                 subpacket[2]<=56'h00100078690000;
                 subpacket[3]<=56'h00100078690000;
@@ -671,7 +671,7 @@ begin
                     sendRegenPacket<=0;
             end else begin
                 if (!CounterY[0]) begin
-                    packetHeader<=24'h0D0282;	// infoframe AVI packet
+                    packetHeader<=24'h0D0282;   // infoframe AVI packet
                     // Byte0: Checksum
                     // Byte1: 10 = 0(Y1:Y0=0 RGB)(A0=1 No active format)(B1:B0=00 No bar info)(S1:S0=00 No scan info)
                     // Byte2: 2A = (C1:C0=0 No colorimetry)(M1:M0=2 16:9)(R3:R0=A 16:9)
@@ -681,7 +681,7 @@ begin
                     subpacket[0]<=56'h000003002A1032;
                     subpacket[1]<=56'h00000000000000;
                 end else begin
-                    packetHeader<=24'h0A0184;	// infoframe audio packet
+                    packetHeader<=24'h0A0184;   // infoframe audio packet
                     // Byte0: Checksum
                     // Byte1: 11 = (CT3:0=1 PCM)0(CC2:0=1 2ch)
                     // Byte2: 00 = 000(SF2:0=0 As stream)(SS1:0=0 As stream)
@@ -709,7 +709,7 @@ begin
         begin
             // Trailing guardband for data period
             dataGuardBand<=1;
-            dataChannel0<={1'b1, 1'b1, vSync, hSync};	
+            dataChannel0<={1'b1, 1'b1, vSync, hSync};
         end
         else
         begin
@@ -757,7 +757,7 @@ end
 always @(posedge pixclk)
 begin
     // Cycle 1
-    tercDataDelayed[0]<=tercData;	// To account for delay through encoder
+    tercDataDelayed[0]<=tercData;       // To account for delay through encoder
     videoGuardBandDelayed[0]<=videoGuardBand;
     dataGuardBandDelayed[0]<=dataGuardBand;
     // Cycle 2
@@ -807,7 +807,7 @@ always @(posedge clk_TMDS)
 begin
     TMDS_shift_red   <= (TMDS_mod10==4'd8) ? TMDS_shift_red_delay   : TMDS_shift_red  [9:2];
     TMDS_shift_green <= (TMDS_mod10==4'd8) ? TMDS_shift_green_delay : TMDS_shift_green[9:2];
-    TMDS_shift_blue  <= (TMDS_mod10==4'd8) ? TMDS_shift_blue_delay  : TMDS_shift_blue [9:2];	
+    TMDS_shift_blue  <= (TMDS_mod10==4'd8) ? TMDS_shift_blue_delay  : TMDS_shift_blue [9:2];
     TMDS_mod10 <= (TMDS_mod10==4'd8) ? 4'd0 : TMDS_mod10+4'd2;
 end
 
@@ -837,7 +837,7 @@ begin
         if (buttonDebounce=='h1ffff)
             scanlineType<=scanlineType!=2?scanlineType+1:0;
         buttonDebounce<=0;
-    end else if (buttonDebounce!='h1ffff) begin	// Audio clock is 6MHz so this is about 22ms
+    end else if (buttonDebounce!='h1ffff) begin // Audio clock is 6MHz so this is about 22ms
         buttonDebounce<=buttonDebounce+1;
     end
 end
